@@ -30,22 +30,23 @@ class AppointmentBookingTest extends TestCase
         $this->assertDatabaseCount('appointments', 0);
     }
 
-    public function test_barbers_can_book_appointments_too(): void
+    public function test_barbers_cannot_access_client_appointments(): void
     {
-        $booker = User::factory()->barber()->create();
         $barber = User::factory()->barber()->create();
-        $service = Service::factory()->create();
 
-        $this->actingAs($booker)->get(route('appointments.create'))->assertOk();
+        // El barbero no reserva: el rol de citas es solo para clientes.
+        $this->actingAs($barber)->get(route('appointments.index'))->assertForbidden();
 
-        $this->actingAs($booker)->post(route('appointments.store'), [
-            'service_id' => $service->id,
-            'barber_id' => $barber->id,
+        $this->actingAs($barber)->get(route('appointments.create'))->assertForbidden();
+
+        $this->actingAs($barber)->post(route('appointments.store'), [
+            'service_id' => Service::factory()->create()->id,
+            'barber_id' => User::factory()->barber()->create()->id,
             'date' => today()->addDay()->toDateString(),
-            'time' => '16:00',
-        ])->assertRedirect(route('appointments.index'));
+            'time' => '10:00',
+        ])->assertForbidden();
 
-        $this->assertDatabaseCount('appointments', 1);
+        $this->assertDatabaseCount('appointments', 0);
     }
 
     public function test_clients_cannot_book_without_logging_in(): void

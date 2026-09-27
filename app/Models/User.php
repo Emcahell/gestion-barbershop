@@ -62,6 +62,11 @@ class User extends Authenticatable
         return $this->role === UserRole::Barber;
     }
 
+    public function isClient(): bool
+    {
+        return $this->role === UserRole::Client;
+    }
+
     /**
      * ¿Puede acceder al panel de la barbería (barbero o administrador)?
      */

@@ -23,7 +23,7 @@
                         Ya tengo cuenta
                     </a>
                 @else
-                    @if (auth()->user()->isAdmin())
+                    @if (auth()->user()->canManageBarbershop())
                         <a href="{{ route('panel.index') }}" class="btn border-mustard bg-mustard text-ink hover:bg-white">
                             Ir a la agenda
                         </a>

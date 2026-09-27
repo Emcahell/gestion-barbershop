@@ -34,14 +34,15 @@ class HomeTest extends TestCase
             ->assertSee('Ir a la agenda');
     }
 
-    public function test_barbers_keep_the_booking_options(): void
+    public function test_barbers_do_not_see_the_booking_options(): void
     {
         $barber = User::factory()->barber()->create();
 
         $this->actingAs($barber)->get(route('home'))
             ->assertOk()
-            ->assertSee('Reservar')
-            ->assertSee('Mis citas');
+            ->assertDontSee('Reservar')
+            ->assertDontSee('Mis citas')
+            ->assertSee('Ir a la agenda');
     }
 
     public function test_booking_form_requires_login(): void

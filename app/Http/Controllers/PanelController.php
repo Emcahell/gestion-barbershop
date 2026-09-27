@@ -79,6 +79,30 @@ class PanelController extends Controller
     }
 
     /**
+     * Cancel an appointment from the agenda (barber's own or, for the admin, any).
+     *
+     * La regla de las 2 horas solo aplica al cliente que reserva desde
+     * «Mis citas»: la barbería puede cancelar en cualquier momento
+     * (enfermedad del barbero, cierre imprevisto, etc.).
+     */
+    public function cancel(Request $request, Appointment $appointment): RedirectResponse
+    {
+        $user = $request->user();
+
+        abort_unless($user->isAdmin() || $appointment->barber_id === $user->id, 403);
+
+        if ($appointment->status !== AppointmentStatus::Scheduled) {
+            return back()->withErrors([
+                'appointment' => 'Solo se pueden cancelar citas con estado «Agendada».',
+            ]);
+        }
+
+        $appointment->update(['status' => AppointmentStatus::Cancelled]);
+
+        return back()->with('success', 'La cita fue cancelada. El turno volvió a estar disponible para otros clientes.');
+    }
+
+    /**
      * Resolve the requested agenda date, defaulting to today.
      */
     private function resolveDate(Request $request): string

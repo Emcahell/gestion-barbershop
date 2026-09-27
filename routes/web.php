@@ -36,11 +36,11 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Reserva y citas: solo cliente y barbero (el admin no reserva)
+    | Reserva y citas: solo el cliente reserva (barbero y admin no)
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware('role:client,barber')->group(function () {
+    Route::middleware('role:client')->group(function () {
         Route::get('/appointments', [AppointmentController::class, 'index'])->name('appointments.index');
         Route::get('/appointments/create', [AppointmentController::class, 'create'])->name('appointments.create');
         Route::post('/appointments', [AppointmentController::class, 'store'])->name('appointments.store');
@@ -59,6 +59,9 @@ Route::middleware('auth')->group(function () {
 
         Route::patch('/panel/appointments/{appointment}/complete', [PanelController::class, 'complete'])
             ->name('panel.appointments.complete');
+
+        Route::patch('/panel/appointments/{appointment}/cancel', [PanelController::class, 'cancel'])
+            ->name('panel.appointments.cancel');
 
         Route::resource('/services', ServiceController::class)->except('show');
     });

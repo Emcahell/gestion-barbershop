@@ -183,6 +183,109 @@ class DailyAgendaTest extends TestCase
         $this->assertSame('scheduled', $appointment->fresh()->status->value);
     }
 
+    public function test_barber_can_cancel_an_appointment_from_the_panel_even_at_the_last_minute(): void
+    {
+        $barber = User::factory()->barber()->create();
+        $client = User::factory()->create();
+
+        // Cita a punto de empezar: la barbería no está limitada por las 2 horas.
+        $soon = now()->addMinutes(30);
+
+        $appointment = Appointment::factory()->create([
+            'user_id' => $client->id,
+            'barber_id' => $barber->id,
+            'date' => $soon->toDateString(),
+            'time' => $soon->format('H:i'),
+        ]);
+
+        $this->actingAs($barber)
+            ->get(route('panel.index', ['date' => $soon->toDateString()]))
+            ->assertOk()
+            ->assertSee('Cancelar');
+
+        $this->actingAs($barber)
+            ->patch(route('panel.appointments.cancel', $appointment))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('cancelled', $appointment->fresh()->status->value);
+
+        // El cliente ve la cancelación reflejada en sus citas.
+        $this->actingAs($client)
+            ->get(route('appointments.index'))
+            ->assertOk()
+            ->assertSee('Cancelada');
+    }
+
+    public function test_admin_can_cancel_any_appointment_from_the_panel(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $barber = User::factory()->barber()->create();
+        $client = User::factory()->create();
+        $service = Service::factory()->create();
+
+        $appointment = $this->createAppointment($barber, $client, $service, '11:00');
+
+        $this->actingAs($admin)
+            ->patch(route('panel.appointments.cancel', $appointment))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('cancelled', $appointment->fresh()->status->value);
+    }
+
+    public function test_barber_cannot_cancel_other_barbers_appointments(): void
+    {
+        $barber = User::factory()->barber()->create();
+        $otherBarber = User::factory()->barber()->create();
+
+        $appointment = Appointment::factory()->create([
+            'barber_id' => $otherBarber->id,
+            'date' => today()->toDateString(),
+            'time' => '11:00',
+        ]);
+
+        $this->actingAs($barber)
+            ->patch(route('panel.appointments.cancel', $appointment))
+            ->assertForbidden();
+
+        $this->assertSame('scheduled', $appointment->fresh()->status->value);
+    }
+
+    public function test_clients_cannot_cancel_from_the_panel(): void
+    {
+        $client = User::factory()->create();
+
+        $appointment = Appointment::factory()->create([
+            'user_id' => $client->id,
+            'date' => today()->toDateString(),
+            'time' => '11:00',
+        ]);
+
+        $this->actingAs($client)
+            ->patch(route('panel.appointments.cancel', $appointment))
+            ->assertForbidden();
+
+        $this->assertSame('scheduled', $appointment->fresh()->status->value);
+    }
+
+    public function test_only_scheduled_appointments_can_be_cancelled_from_the_panel(): void
+    {
+        $barber = User::factory()->barber()->create();
+        $client = User::factory()->create();
+
+        $completed = Appointment::factory()->completed()->create([
+            'user_id' => $client->id,
+            'barber_id' => $barber->id,
+            'date' => today()->toDateString(),
+            'time' => '11:00',
+        ]);
+
+        $this->actingAs($barber)
+            ->patch(route('panel.appointments.cancel', $completed))
+            ->assertSessionHasErrors('appointment');
+
+        $this->assertSame('completed', $completed->fresh()->status->value);
+    }
+
     private function createAppointment(
         User $barber,
         User $client,

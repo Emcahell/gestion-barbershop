@@ -82,15 +82,28 @@
                         </td>
                         <td class="px-4 py-3 text-right">
                             @if ($appointment->status === AppointmentStatus::Scheduled)
-                                <form
-                                    method="POST"
-                                    action="{{ route('panel.appointments.complete', $appointment) }}"
-                                    onsubmit="return confirm('¿Marcar esta cita como completada?')"
-                                >
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="btn btn-secondary">Completada</button>
-                                </form>
+                                <div class="flex flex-wrap justify-end gap-2">
+                                    <form
+                                        method="POST"
+                                        action="{{ route('panel.appointments.complete', $appointment) }}"
+                                        onsubmit="return confirm('¿Marcar esta cita como completada?')"
+                                    >
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="btn btn-secondary">Completada</button>
+                                    </form>
+                                    <form
+                                        method="POST"
+                                        action="{{ route('panel.appointments.cancel', $appointment) }}"
+                                        onsubmit="return confirm('¿Cancelar esta cita? El turno quedará disponible y el cliente verá el cambio.')"
+                                    >
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="btn btn-secondary border-red-600 text-red-600 hover:bg-red-600 hover:text-white">
+                                            Cancelar
+                                        </button>
+                                    </form>
+                                </div>
                             @else
                                 <span class="text-neutral-400">—</span>
                             @endif
@@ -127,6 +140,7 @@
                         @if (auth()->user()->isAdmin())
                             <th class="px-4 py-3">Barbero</th>
                         @endif
+                        <th class="px-4 py-3 text-right">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -150,12 +164,25 @@
                             @if (auth()->user()->isAdmin())
                                 <td class="px-4 py-3">{{ $appointment->barber->name }}</td>
                             @endif
+                            <td class="px-4 py-3 text-right">
+                                <form
+                                    method="POST"
+                                    action="{{ route('panel.appointments.cancel', $appointment) }}"
+                                    onsubmit="return confirm('¿Cancelar esta cita? El turno quedará disponible y el cliente verá el cambio.')"
+                                >
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="btn btn-secondary border-red-600 text-red-600 hover:bg-red-600 hover:text-white">
+                                        Cancelar
+                                    </button>
+                                </form>
+                            </td>
                         </tr>
                     @empty
                         <tr>
                             <td
                                 class="px-4 py-8 text-center text-neutral-500"
-                                colspan="{{ auth()->user()->isAdmin() ? 5 : 4 }}"
+                                colspan="{{ auth()->user()->isAdmin() ? 6 : 5 }}"
                             >
                                 No hay reservas con fecha posterior al día consultado.
                             </td>

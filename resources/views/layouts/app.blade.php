@@ -17,10 +17,10 @@
                 @auth
                     @php($user = auth()->user())
 
-                    @unless ($user->isAdmin())
+                    @if ($user->isClient())
                         <a href="{{ route('appointments.create') }}" class="btn btn-primary">Reservar</a>
                         <a href="{{ route('appointments.index') }}" class="btn btn-secondary">Mis citas</a>
-                    @endunless
+                    @endif
 
                     @if ($user->canManageBarbershop())
                         <a href="{{ route('panel.index') }}" class="btn btn-secondary">Agenda</a>
