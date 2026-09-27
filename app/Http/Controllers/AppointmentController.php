@@ -1,0 +1,126 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Enums\AppointmentStatus;
+use App\Http\Requests\StoreAppointmentRequest;
+use App\Models\Appointment;
+use App\Models\Service;
+use App\Models\User;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+
+class AppointmentController extends Controller
+{
+    /**
+     * List the authenticated client's appointments (upcoming and past).
+     */
+    public function index(Request $request): View
+    {
+        $appointments = $request->user()
+            ->appointments()
+            ->with(['barber', 'service'])
+            ->orderBy('date')
+            ->orderBy('time')
+            ->get();
+
+        return view('appointments.index', [
+            'upcoming' => $appointments
+                ->filter(fn (Appointment $appointment) => $appointment->isUpcoming())
+                ->values(),
+            'past' => $appointments
+                ->reject(fn (Appointment $appointment) => $appointment->isUpcoming())
+                ->values(),
+        ]);
+    }
+
+    /**
+     * Show the booking form with the slots available for barber and date.
+     */
+    public function create(Request $request): View
+    {
+        $data = $request->validate([
+            'service_id' => ['nullable', 'integer'],
+            'barber_id' => ['nullable', 'integer'],
+            'date' => ['nullable', 'date', 'after_or_equal:today'],
+        ], [
+            'date.after_or_equal' => 'Solo se pueden reservar turnos desde hoy en adelante.',
+        ]);
+
+        $serviceId = $data['service_id'] ?? null;
+        $barberId = $data['barber_id'] ?? null;
+        $date = $data['date'] ?? today()->toDateString();
+
+        $takenTimes = [];
+
+        if ($barberId && $date) {
+            $takenTimes = Appointment::where('barber_id', $barberId)
+                ->where('date', $date)
+                ->where('status', AppointmentStatus::Scheduled)
+                ->pluck('time')
+                ->map(fn (string $time) => substr($time, 0, 5))
+                ->all();
+        }
+
+        return view('appointments.create', [
+            'services' => Service::where('is_active', true)->orderBy('name')->get(),
+            'barbers' => User::where('role', 'barber')->orderBy('name')->get(),
+            'slots' => Appointment::slots(),
+            'takenTimes' => $takenTimes,
+            'selectedServiceId' => $serviceId,
+            'selectedBarberId' => $barberId,
+            'selectedDate' => $date,
+        ]);
+    }
+
+    /**
+     * Store a new appointment after checking the barber's availability.
+     */
+    public function store(StoreAppointmentRequest $request): RedirectResponse
+    {
+        $data = $request->validated();
+
+        /**
+         * Regla de negocio crítica: un barbero no puede tener dos citas
+         * en la misma fecha y hora.
+         */
+        $slotAlreadyTaken = Appointment::where('barber_id', $data['barber_id'])
+            ->where('date', $data['date'])
+            ->where('time', $data['time'])
+            ->where('status', AppointmentStatus::Scheduled)
+            ->exists();
+
+        if ($slotAlreadyTaken) {
+            return back()
+                ->withErrors(['time' => 'Ese horario ya fue reservado por otro cliente. Elige un turno distinto.'])
+                ->withInput();
+        }
+
+        $request->user()->appointments()->create($data);
+
+        return redirect()
+            ->route('appointments.index')
+            ->with('success', '¡Turno reservado con éxito!');
+    }
+
+    /**
+     * Cancel an appointment (only when there are enough hours left).
+     */
+    public function cancel(Request $request, Appointment $appointment): RedirectResponse
+    {
+        abort_unless($appointment->user_id === $request->user()->id, 403);
+
+        $hours = (int) config('appointments.cancellation_hours');
+
+        if (! $appointment->canBeCancelled()) {
+            return back()->withErrors([
+                'appointment' => "Solo puedes cancelar la cita si faltan más de {$hours} horas para el turno.",
+            ]);
+        }
+
+        $appointment->update(['status' => AppointmentStatus::Cancelled]);
+
+        return back()->with('success', 'La cita fue cancelada. El turno volvió a estar disponible.');
+    }
+}
