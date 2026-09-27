@@ -9,20 +9,42 @@ use Illuminate\Database\Seeder;
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Seed only the admin account.
+     * Seed the admin account from environment variables.
      *
-     * Es el único dato por defecto de la aplicación: el admin crea los
-     * barberos desde el panel y los servicios desde el CRUD. El seeder
-     * es idempotente, por lo que puede ejecutarse sin borrar datos.
+     * Las credenciales nunca viven en el código: se leen del archivo .env
+     * (ignorado por git) mediante las variables ADMIN_*. Si no está
+     * definido ADMIN_EMAIL, el seeder no crea nada, de modo que el
+     * repositorio público no expone ninguna credencial.
+     *
+     * Es idempotente: el admin se identifica por su correo, por lo que
+     * ejecutarlo de nuevo nunca duplica cuentas ni toca datos existentes.
      */
     public function run(): void
     {
+        $email = env('ADMIN_EMAIL');
+
+        if (! $email) {
+            $this->command?->warn(
+                'Sin ADMIN_EMAIL en .env: no se creó ninguna cuenta de administrador.',
+            );
+
+            return;
+        }
+
+        $password = env('ADMIN_PASSWORD') ?: str()->password(16);
+
+        if (! env('ADMIN_PASSWORD')) {
+            $this->command?->warn(
+                'ADMIN_PASSWORD no definida: se generó una contraseña aleatoria. Define ADMIN_PASSWORD en .env y promuévela con tinker.',
+            );
+        }
+
         User::firstOrCreate(
-            ['email' => 'admin@barbershop.test'],
+            ['email' => $email],
             [
-                'name' => 'Administrador',
-                'phone' => '+58 412 4000-1000',
-                'password' => 'password',
+                'name' => env('ADMIN_NAME', 'Administrador'),
+                'phone' => env('ADMIN_PHONE', ''),
+                'password' => $password,
                 'role' => UserRole::Admin,
             ],
         );
