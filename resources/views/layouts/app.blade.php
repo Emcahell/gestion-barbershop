@@ -25,6 +25,10 @@
                     @if ($user->canManageBarbershop())
                         <a href="{{ route('panel.index') }}" class="btn btn-secondary">Agenda</a>
                         <a href="{{ route('services.index') }}" class="btn btn-secondary">Servicios</a>
+
+                        @if ($user->isBarber())
+                            <a href="{{ route('availability.index') }}" class="btn btn-secondary">Disponibilidad</a>
+                        @endif
                     @endif
 
                     @if ($user->isAdmin())

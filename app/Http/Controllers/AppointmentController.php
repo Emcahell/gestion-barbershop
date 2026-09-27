@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Enums\AppointmentStatus;
 use App\Http\Requests\StoreAppointmentRequest;
 use App\Models\Appointment;
+use App\Models\BarberUnavailability;
 use App\Models\Service;
 use App\Models\User;
+use App\Support\MonthCalendar;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -51,6 +53,7 @@ class AppointmentController extends Controller
         $serviceId = $data['service_id'] ?? null;
         $barberId = $data['barber_id'] ?? null;
         $date = $data['date'] ?? today()->toDateString();
+        $month = MonthCalendar::month($request->input('month'));
 
         $takenTimes = [];
 
@@ -63,11 +66,32 @@ class AppointmentController extends Controller
                 ->all();
         }
 
+        $barbers = User::where('role', 'barber')->orderBy('name')->get();
+
+        // Días y horas que el barbero marcó como no disponibles.
+        $blockedDays = [];
+        $blockedTimes = [];
+        $dayOff = false;
+
+        if ($barberId) {
+            $blockedDays = BarberUnavailability::dayOffDates((int) $barberId, $month);
+
+            if ($date) {
+                $dayOff = BarberUnavailability::isDayOff((int) $barberId, $date);
+                $blockedTimes = $dayOff ? [] : BarberUnavailability::blockedTimes((int) $barberId, $date);
+            }
+        }
+
         return view('appointments.create', [
             'services' => Service::where('is_active', true)->orderBy('name')->get(),
-            'barbers' => User::where('role', 'barber')->orderBy('name')->get(),
+            'barbers' => $barbers,
             'slots' => Appointment::slots(),
             'takenTimes' => $takenTimes,
+            'blockedTimes' => $blockedTimes,
+            'blockedDays' => $blockedDays,
+            'dayOff' => $dayOff,
+            'calendar' => MonthCalendar::make($month),
+            'selectedBarberName' => $barbers->firstWhere('id', (int) $barberId)?->name,
             'selectedServiceId' => $serviceId,
             'selectedBarberId' => $barberId,
             'selectedDate' => $date,

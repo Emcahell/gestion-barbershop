@@ -3,8 +3,11 @@
 namespace App\Http\Requests;
 
 use App\Models\Appointment;
+use App\Models\BarberUnavailability;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class StoreAppointmentRequest extends FormRequest
@@ -35,6 +38,47 @@ class StoreAppointmentRequest extends FormRequest
             ],
             'date' => ['required', 'date', 'after_or_equal:today'],
             'time' => ['required', 'date_format:H:i', Rule::in(Appointment::slots())],
+        ];
+    }
+
+    /**
+     * Reglas adicionales: el barbero no puede tener bloqueado el día
+     * completo ni la hora elegida (días y horas que él mismo marcó
+     * como no disponibles en su pantalla de disponibilidad).
+     *
+     * @return array<int, callable>
+     */
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                $barberId = $this->input('barber_id');
+                $date = $this->input('date');
+
+                if (! $barberId || ! is_string($date) || $date === '') {
+                    return;
+                }
+
+                try {
+                    $date = Carbon::parse($date)->toDateString();
+                } catch (\Throwable) {
+                    return;
+                }
+
+                $barberId = (int) $barberId;
+
+                if (BarberUnavailability::isDayOff($barberId, $date)) {
+                    $validator->errors()->add('date', 'El barbero seleccionado no atiende ese día. Elige otra fecha.');
+
+                    return;
+                }
+
+                $time = $this->input('time');
+
+                if (is_string($time) && in_array($time, BarberUnavailability::blockedTimes($barberId, $date), true)) {
+                    $validator->errors()->add('time', 'El barbero seleccionado no atiende a esa hora ese día. Elige otro horario.');
+                }
+            },
         ];
     }
 

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\AvailabilityController;
 use App\Http\Controllers\BarberController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PanelController;
@@ -64,6 +65,22 @@ Route::middleware('auth')->group(function () {
             ->name('panel.appointments.cancel');
 
         Route::resource('/services', ServiceController::class)->except('show');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Disponibilidad: solo el barbero bloquea sus días y horas de atención
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware('role:barber')->group(function () {
+        Route::get('/disponibilidad', [AvailabilityController::class, 'index'])->name('availability.index');
+
+        Route::post('/disponibilidad/dia', [AvailabilityController::class, 'toggleDayOff'])
+            ->name('availability.day-off');
+
+        Route::post('/disponibilidad/horario', [AvailabilityController::class, 'saveHours'])
+            ->name('availability.hours');
     });
 
     /*
