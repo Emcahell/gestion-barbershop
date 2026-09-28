@@ -75,10 +75,6 @@
         @yield('content')
     </main>
 
-    <footer class="border-t-2 border-ink bg-white px-4 py-5 text-center text-xs font-bold tracking-widest text-neutral-500 uppercase">
-        BarberShop — Sistema de gestión de citas
-    </footer>
-
     @auth
         @php
             $user = auth()->user();
