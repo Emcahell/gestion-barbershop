@@ -1,58 +1,168 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# BarberShop — Sistema de Gestión de Citas
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistema de reservas para barberías: los clientes reservan turnos en línea, los
+barberos administran su agenda y disponibilidad, y el administrador gestiona
+servicios, cuentas de barberos y la barbería.
 
-## About Laravel
+## Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+| Componente | Tecnología |
+| --- | --- |
+| Framework | Laravel 13 (PHP 8.4) |
+| Base de datos | SQLite |
+| Frontend | Blade + Tailwind CSS v4 |
+| Build | Vite 8 |
+| Tests | PHPUnit (`RefreshDatabase` con BD en memoria) |
+| Código | Laravel Pint |
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Instalación
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Requisitos: PHP ≥ 8.3, Composer y Node.js.
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer setup
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+El script `setup` instala dependencias, crea el `.env` (si no existe), genera la
+llave `APP_KEY`, corre las migraciones, siembra el administrador y compila los
+assets.
 
-## Contributing
+Instalación manual equivalente:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+php artisan db:seed
+npm install
+npm run build
+```
 
-## Code of Conduct
+Servidor de desarrollo:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+composer dev   # artisan dev (servidor, Vite y Pail)
+```
 
-## Security Vulnerabilities
+## Configuración
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Todo lo configurable vive en `.env` (nunca en el repo):
 
-## License
+| Variable | Descripción |
+| --- | --- |
+| `APP_TIMEZONE` | Zona horaria (por defecto `America/Caracas`). |
+| `APP_LOCALE` | Idioma de la app (`es`). |
+| `ADMIN_NAME` | Nombre del administrador inicial. |
+| `ADMIN_EMAIL` | Correo del administrador inicial. |
+| `ADMIN_PHONE` | Teléfono (entre comillas: `"+58 412 000-0000"`). |
+| `ADMIN_PASSWORD` | Contraseña; si se omite se genera una aleatoria. |
+| `APPOINTMENTS_OPEN` / `APPOINTMENTS_CLOSE` | Horario de atención (09:00–19:00). |
+| `APPOINTMENTS_SLOT_MINUTES` | Duración de cada turno (60). |
+| `APPOINTMENTS_CANCELLATION_HOURS` | Horas mínimas para cancelar (2). |
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+`DatabaseSeeder` es idempotente (`firstOrCreate`) y solo crea la cuenta
+administradora con las variables `ADMIN_*`. Si falta `ADMIN_EMAIL` no crea nada.
+
+```bash
+php artisan db:seed        # seguro de repetir, no toca datos existentes
+```
+
+> **Importante:** nunca uses `migrate:fresh --seed` en una BD con datos
+> reales; borra todo. `php artisan migrate` solo agrega tablas nuevas sin
+> modificar datos.
+
+## Roles y permisos
+
+| Acción | Cliente | Barbero | Admin |
+| --- | :-: | :-: | :-: |
+| Registrarse / iniciar sesión | ✅ | ✅ | ✅ |
+| Reservar y cancelar sus citas | ✅ | ❌ | ❌ |
+| Ver su agenda diaria y completar citas | ❌ | ✅ | ✅ (toda la barbería) |
+| Cancelar citas desde la agenda (sin límite de 2 h) | ❌ | ✅ (las suyas) | ✅ (todas) |
+| Gestionar servicios | ❌ | ✅ | ✅ |
+| Marcar días/horas no disponibles | ❌ | ✅ (los suyos) | ❌ |
+| Crear cuentas de barberos | ❌ | ❌ | ✅ |
+
+El rol se asigna con el enum `App\Enums\UserRole` (`client`, `barber`,
+`admin`); el registro siempre crea clientes. El acceso se controla con el
+middleware `role` (`app/Http/Middleware/EnsureUserHasRole`).
+
+## Funcionalidades
+
+### Clientes
+- **Registro e ingreso** a medida, con redirección según el rol.
+- **Reserva** en 3 pasos: servicio → barbero → fecha. Calendario mensual donde
+  los días no disponibles del barbero aparecen bloqueados en rojo y no se pueden
+  elegir; las horas bloqueadas aparecen tachadas junto a las ya ocupadas.
+- **Mis citas**: próximas citas e historial, con cancelación hasta 2 horas
+  antes del turno.
+
+### Barberos
+- **Agenda diaria** con navegación por fecha (← Anterior / Siguiente / Ir a
+  hoy), facturación estimada del día y sección de próximas citas.
+- **Completar** citas (pasan al historial del cliente) y **cancelarlas** desde
+  la agenda en cualquier momento (la regla de 2 h solo aplica al cliente).
+- **Disponibilidad**: calendario para marcar días completos no disponibles y
+  checkboxes para bloquear horas puntuales (por ejemplo, si ese día empiezas a
+  las 11:00, bloqueas 09:00 y 10:00). Lo que el barbero marque queda bloqueado
+  para todos los clientes.
+- **Servicios**: crear, editar y desactivar (nunca se borran).
+
+### Administrador
+- **Agenda completa** de todos los barberos con facturación del día.
+- **Barberos**: crea cuentas con nombre, correo y teléfono.
+- **Servicios** de la barbería.
+- No reserva citas ni gestiona la disponibilidad de cada barbero.
+
+## Reglas de negocio
+
+- Turnos fijos de 60 minutos de 09:00 a 18:00 (10 por día), generados por
+  `Appointment::slots()` desde `config/appointments.php`.
+- Un barbero no puede tener dos citas en la misma fecha y hora (validado en
+  `AppointmentController::store`).
+- Días y horas bloqueados por el barbero se validan en el servidor
+  (`StoreAppointmentRequest`), además de deshabilitarlos en la interfaz.
+- La cancelación del cliente exige más de 2 horas de anticipación; la cita
+  cancelada libera el turno.
+
+## Estructura
+
+```
+app/
+├── Enums/            UserRole, AppointmentStatus (con labels en español)
+├── Http/
+│   ├── Controllers/  Appointment, Availability, Panel, Service, Barber, Home, Auth
+│   ├── Middleware/    EnsureUserHasRole (alias `role`)
+│   └── Requests/     StoreAppointmentRequest (validación de reserva)
+├── Models/           User, Service, Appointment, BarberUnavailability
+└── Support/          MonthCalendar (rejilla compartida de calendarios)
+config/appointments.php   horario, duración y regla de cancelación
+database/
+├── migrations/       users(+phone/role), services, appointments, barber_unavailabilities
+├── factories/        estados: barber, admin, inactive, completed, cancelled
+└── seeders/          DatabaseSeeder (solo admin desde env)
+resources/views/      Blade de home, auth, reservations, panel, availability,
+                      services y barbers
+tests/Feature/        70 tests (auth, reserva, cancelación, agenda, servicios,
+                      barberos, disponibilidad)
+```
+
+## Comandos
+
+```bash
+composer dev                  # desarrollo: servidor + Vite + Pail
+php artisan test --compact     # ejecutar la suite (70 tests / 232 assertions)
+vendor/bin/pint --format agent # formato de código
+npm run build                  # compilar assets para producción
+php artisan migrate            # aplicar migraciones pendientes (no borra datos)
+php artisan db:seed            # sembrar/actualizar el admin (idempotente)
+```
+
+## Notas para producción
+
+- El proyecto no viene con Git inicializado; ejecuta `git init` antes de
+  publicar y confirma que `.env` esté en `.gitignore` (las credenciales nunca
+  se suben al repo).
+- Cambia la contraseña `ADMIN_PASSWORD` del administrador y usa un valor fuerte.
+- Revisa que `APP_URL`, `APP_TIMEZONE` y `APP_DEBUG=false` estén correctos.
