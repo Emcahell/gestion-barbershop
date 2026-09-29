@@ -22,22 +22,35 @@
         </div>
     </div>
 
-    <form method="GET" action="{{ route('panel.index') }}" class="mt-6 flex flex-wrap items-center gap-2">
+    {{-- Mobile: input de fecha en una línea y los botones debajo; desde sm todo en una sola fila --}}
+    <form
+        method="GET"
+        action="{{ route('panel.index') }}"
+        class="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3"
+    >
         <input
             type="date"
             name="date"
             value="{{ $selectedDate }}"
-            class="input w-auto"
+            class="input w-full sm:w-auto"
             onchange="this.form.submit()"
         >
-        <button type="submit" name="date" value="{{ $previousDate }}" class="btn btn-secondary">← Anterior</button>
-        <button type="submit" name="date" value="{{ $nextDate }}" class="btn btn-secondary">Siguiente →</button>
 
-        @if (! $isToday)
-            <button type="submit" name="date" value="{{ today()->toDateString() }}" class="btn btn-primary">
-                Ir a hoy
-            </button>
-        @endif
+        <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
+            <button type="submit" name="date" value="{{ $previousDate }}" class="btn btn-secondary">← Anterior</button>
+            <button type="submit" name="date" value="{{ $nextDate }}" class="btn btn-secondary">Siguiente →</button>
+
+            @if (! $isToday)
+                <button
+                    type="submit"
+                    name="date"
+                    value="{{ today()->toDateString() }}"
+                    class="btn btn-primary col-span-2 sm:col-auto"
+                >
+                    Ir a hoy
+                </button>
+            @endif
+        </div>
     </form>
 
     <div class="card mt-6 overflow-x-auto !p-0">
