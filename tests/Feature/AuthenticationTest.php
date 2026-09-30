@@ -55,6 +55,28 @@ class AuthenticationTest extends TestCase
         $this->get(route('register'))->assertOk();
     }
 
+    public function test_password_fields_have_a_button_to_show_them(): void
+    {
+        // Botón «Ver» (con su alterno «Ocultar») en cada campo de contraseña.
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertSee('type="password"', false)
+            ->assertSee('Ocultar', false);
+
+        $this->get(route('register'))
+            ->assertOk()
+            ->assertSee('type="password"', false)
+            ->assertSee('Ocultar', false);
+
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->get(route('barbers.create'))
+            ->assertOk()
+            ->assertSee('type="password"', false)
+            ->assertSee('Ocultar', false);
+    }
+
     public function test_clients_can_login(): void
     {
         $user = User::factory()->create();

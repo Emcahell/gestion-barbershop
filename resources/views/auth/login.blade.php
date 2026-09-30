@@ -26,14 +26,12 @@
 
             <div>
                 <label class="label" for="password">Contraseña</label>
-                <input
-                    class="input"
+                <x-password-input
                     id="password"
-                    type="password"
                     name="password"
-                    required
                     autocomplete="current-password"
-                >
+                    required
+                />
             </div>
 
             <label class="flex items-center gap-2 text-sm font-bold">

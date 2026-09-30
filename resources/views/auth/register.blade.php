@@ -53,26 +53,22 @@
 
             <div>
                 <label class="label" for="password">Contraseña</label>
-                <input
-                    class="input"
+                <x-password-input
                     id="password"
-                    type="password"
                     name="password"
-                    required
                     autocomplete="new-password"
-                >
+                    required
+                />
             </div>
 
             <div>
                 <label class="label" for="password_confirmation">Confirmar contraseña</label>
-                <input
-                    class="input"
+                <x-password-input
                     id="password_confirmation"
-                    type="password"
                     name="password_confirmation"
-                    required
                     autocomplete="new-password"
-                >
+                    required
+                />
             </div>
 
             <button type="submit" class="btn btn-primary w-full">Registrarme</button>

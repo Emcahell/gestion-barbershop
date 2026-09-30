@@ -162,7 +162,7 @@ database/
 └── seeders/          DatabaseSeeder (solo admin desde env)
 resources/views/      Blade de home, auth, appointments, panel, availability,
                       reports, services y barbers
-tests/Feature/        77 tests (auth, reserva, cancelación, agenda, servicios,
+tests/Feature/        78 tests (auth, reserva, cancelación, agenda, servicios,
                       barberos, disponibilidad, reportes)
 ```
 
@@ -170,7 +170,7 @@ tests/Feature/        77 tests (auth, reserva, cancelación, agenda, servicios,
 
 ```bash
 composer dev                  # desarrollo: servidor + Vite + Pail
-php artisan test --compact     # suite (77 tests / 262 assertions, usa barbershop_test)
+php artisan test --compact     # suite (78 tests / 271 assertions, usa barbershop_test)
 vendor/bin/pint --format agent # formato de código
 npm run build                  # compilar assets para producción
 php artisan migrate            # aplicar migraciones pendientes (no borra datos)
