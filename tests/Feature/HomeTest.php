@@ -51,4 +51,18 @@ class HomeTest extends TestCase
 
         $this->get(route('appointments.index'))->assertRedirect(route('login'));
     }
+
+    public function test_landing_includes_logo_space_map_gallery_and_footer_credit(): void
+    {
+        $response = $this->get(route('home'));
+
+        $response->assertOk()
+            ->assertSee('Logo de la barbería')
+            ->assertSee('Ubicación')
+            ->assertSee('openstreetmap.org', false)
+            ->assertSee('Galería')
+            ->assertSee('Aplicación desarrollada por')
+            ->assertSee('https://emcahell.dev', false)
+            ->assertSee('Emcahell');
+    }
 }

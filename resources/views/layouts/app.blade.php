@@ -8,12 +8,12 @@
 </head>
 <body class="flex min-h-screen flex-col bg-paper pb-20 text-ink antialiased md:pb-0">
     <header class="border-b-2 border-ink bg-white">
-        <nav class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-4">
-            <a href="{{ route('home') }}" class="text-xl font-black tracking-tighter uppercase">
+        <nav class="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-3 md:flex-wrap md:gap-4 md:px-4 md:py-4">
+            <a href="{{ route('home') }}" class="shrink-0 text-lg font-black tracking-tighter uppercase md:text-xl">
                 Barber<span class="bg-mustard px-1.5">Shop</span>
             </a>
 
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="flex shrink-0 items-center gap-1.5 md:gap-2">
                 @auth
                     @php
                         $user = auth()->user();
@@ -45,31 +45,38 @@
 
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="btn btn-secondary">Salir</button>
+                        <button type="submit" class="btn btn-secondary whitespace-nowrap px-2 tracking-normal text-[0.65rem] md:px-4 md:text-xs md:tracking-widest">Salir</button>
                     </form>
                 @else
-                    <a href="{{ route('login') }}" class="btn btn-secondary">Ingresar</a>
-                    <a href="{{ route('register') }}" class="btn btn-primary">Registrarme</a>
+                    <a href="{{ route('login') }}" class="btn btn-secondary whitespace-nowrap px-2 tracking-normal text-[0.65rem] md:px-4 md:text-xs md:tracking-widest">Ingresar</a>
+                    <a href="{{ route('register') }}" class="btn btn-primary whitespace-nowrap px-2 tracking-normal text-[0.65rem] md:px-4 md:text-xs md:tracking-widest">Registrarme</a>
                 @endauth
             </div>
         </nav>
     </header>
 
-    <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-10">
-        @if (session('success'))
-            <div class="mb-6 border-2 border-ink bg-mustard px-4 py-3 text-sm font-bold">
-                {{ session('success') }}
-            </div>
-        @endif
+    <main @class([
+        'mx-auto w-full flex-1',
+        'max-w-6xl px-4 py-10' => ! $__env->hasSection('wide'),
+    ])>
+        @if (session('success') || $errors->any())
+            <div @class(['mx-auto max-w-6xl px-4' => $__env->hasSection('wide')])>
+                @if (session('success'))
+                    <div class="mb-6 border-2 border-ink bg-mustard px-4 py-3 text-sm font-bold">
+                        {{ session('success') }}
+                    </div>
+                @endif
 
-        @if ($errors->any())
-            <div class="mb-6 border-2 border-ink bg-white px-4 py-3">
-                <p class="text-xs font-black tracking-widest uppercase">Revisa estos datos:</p>
-                <ul class="mt-1 list-inside list-disc text-sm">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
+                @if ($errors->any())
+                    <div class="mb-6 border-2 border-ink bg-white px-4 py-3">
+                        <p class="text-xs font-black tracking-widest uppercase">Revisa estos datos:</p>
+                        <ul class="mt-1 list-inside list-disc text-sm">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
             </div>
         @endif
 

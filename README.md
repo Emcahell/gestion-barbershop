@@ -160,17 +160,17 @@ database/
 ├── migrations/       users(+phone/role), services, appointments(+completed_at/price), barber_unavailabilities
 ├── factories/        estados: barber, admin, inactive, completed, cancelled
 └── seeders/          DatabaseSeeder (solo admin desde env)
-resources/views/      Blade de home, auth, appointments, panel, availability,
-                      reports, services y barbers
-tests/Feature/        78 tests (auth, reserva, cancelación, agenda, servicios,
-                      barberos, disponibilidad, reportes)
+resources/views/      Blade de components, home (landing), auth, appointments,
+                      panel, availability, reports, services y barbers
+tests/Feature/        79 tests (auth, reserva, cancelación, agenda, servicios,
+                      barberos, disponibilidad, reportes, landing)
 ```
 
 ## Comandos
 
 ```bash
 composer dev                  # desarrollo: servidor + Vite + Pail
-php artisan test --compact     # suite (78 tests / 271 assertions, usa barbershop_test)
+php artisan test --compact     # suite (79 tests / 279 assertions, usa barbershop_test)
 vendor/bin/pint --format agent # formato de código
 npm run build                  # compilar assets para producción
 php artisan migrate            # aplicar migraciones pendientes (no borra datos)
