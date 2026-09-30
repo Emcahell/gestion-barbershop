@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'barber_id', 'service_id', 'date', 'time', 'status'])]
+#[Fillable(['user_id', 'barber_id', 'service_id', 'date', 'time', 'status', 'completed_at', 'price'])]
 class Appointment extends Model
 {
     /** @use HasFactory<AppointmentFactory> */
@@ -26,7 +26,33 @@ class Appointment extends Model
         return [
             'date' => 'date:Y-m-d',
             'status' => AppointmentStatus::class,
+            'completed_at' => 'datetime',
+            'price' => 'decimal:2',
         ];
+    }
+
+    /**
+     * Al completarse la cita se sella el momento y el precio del servicio.
+     *
+     * Los reportes suman el ingreso en el instante en que la cita pasa a
+     * «Completada»: cambiar después el precio de un servicio no altera el
+     * histórico y las citas canceladas nunca suman.
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (Appointment $appointment): void {
+            if ($appointment->status !== AppointmentStatus::Completed) {
+                return;
+            }
+
+            if ($appointment->completed_at === null) {
+                $appointment->completed_at = now();
+            }
+
+            if ($appointment->price === null) {
+                $appointment->price = $appointment->service()->value('price');
+            }
+        });
     }
 
     /**

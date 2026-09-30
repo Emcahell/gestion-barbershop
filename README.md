@@ -90,6 +90,7 @@ php artisan db:seed        # seguro de repetir, no toca datos existentes
 | Reservar y cancelar sus citas | ✅ | ❌ | ❌ |
 | Ver su agenda diaria y completar citas | ❌ | ✅ | ✅ (toda la barbería) |
 | Cancelar citas desde la agenda (sin límite de 2 h) | ❌ | ✅ (las suyas) | ✅ (todas) |
+| Ver reportes (ingresos, servicios y ranking) | ❌ | ✅ (los suyos) | ✅ (toda la barbería) |
 | Gestionar servicios | ❌ | ✅ | ✅ |
 | Marcar días/horas no disponibles | ❌ | ✅ (los suyos) | ❌ |
 | Crear cuentas de barberos | ❌ | ❌ | ✅ |
@@ -118,11 +119,15 @@ middleware `role` (`app/Http/Middleware/EnsureUserHasRole`).
   las 11:00, bloqueas 09:00 y 10:00). Lo que el barbero marque queda bloqueado
   para todos los clientes.
 - **Servicios**: crear, editar y desactivar (nunca se borran).
+- **Reportes**: ingresos y número de servicios completados, con gráfico por
+  día/semana/mes y filtro por últimos 7 días, 30 días, 3 meses o año en curso;
+  además del top 10 de clientes con más citas completadas.
 
 ### Administrador
 - **Agenda completa** de todos los barberos con facturación del día.
 - **Barberos**: crea cuentas con nombre, correo y teléfono.
 - **Servicios** de la barbería.
+- **Reportes** de toda la barbería: ingresos, servicios y ranking de clientes.
 - No reserva citas ni gestiona la disponibilidad de cada barbero.
 
 ## Reglas de negocio
@@ -135,6 +140,9 @@ middleware `role` (`app/Http/Middleware/EnsureUserHasRole`).
   (`StoreAppointmentRequest`), además de deshabilitarlos en la interfaz.
 - La cancelación del cliente exige más de 2 horas de anticipación; la cita
   cancelada libera el turno.
+- El ingreso se contabiliza al completar la cita: `completed_at` y el `price`
+  se sellan en ese instante, por eso cambiar después el precio de un servicio
+  no altera el histórico y las citas canceladas nunca suman.
 
 ## Estructura
 
@@ -142,27 +150,27 @@ middleware `role` (`app/Http/Middleware/EnsureUserHasRole`).
 app/
 ├── Enums/            UserRole, AppointmentStatus (con labels en español)
 ├── Http/
-│   ├── Controllers/  Appointment, Availability, Panel, Service, Barber, Home, Auth
+│   ├── Controllers/  Appointment, Availability, Panel, Report, Service, Barber, Home, Auth
 │   ├── Middleware/    EnsureUserHasRole (alias `role`)
 │   └── Requests/     StoreAppointmentRequest (validación de reserva)
 ├── Models/           User, Service, Appointment, BarberUnavailability
 └── Support/          MonthCalendar (rejilla compartida de calendarios)
 config/appointments.php   horario, duración y regla de cancelación
 database/
-├── migrations/       users(+phone/role), services, appointments, barber_unavailabilities
+├── migrations/       users(+phone/role), services, appointments(+completed_at/price), barber_unavailabilities
 ├── factories/        estados: barber, admin, inactive, completed, cancelled
 └── seeders/          DatabaseSeeder (solo admin desde env)
-resources/views/      Blade de home, auth, reservations, panel, availability,
-                      services y barbers
-tests/Feature/        70 tests (auth, reserva, cancelación, agenda, servicios,
-                      barberos, disponibilidad)
+resources/views/      Blade de home, auth, appointments, panel, availability,
+                      reports, services y barbers
+tests/Feature/        77 tests (auth, reserva, cancelación, agenda, servicios,
+                      barberos, disponibilidad, reportes)
 ```
 
 ## Comandos
 
 ```bash
 composer dev                  # desarrollo: servidor + Vite + Pail
-php artisan test --compact     # suite (70 tests / 232 assertions, usa barbershop_test)
+php artisan test --compact     # suite (77 tests / 262 assertions, usa barbershop_test)
 vendor/bin/pint --format agent # formato de código
 npm run build                  # compilar assets para producción
 php artisan migrate            # aplicar migraciones pendientes (no borra datos)

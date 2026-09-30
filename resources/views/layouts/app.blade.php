@@ -29,6 +29,7 @@
                         @if ($user->canManageBarbershop())
                             <a href="{{ route('panel.index') }}" class="btn btn-secondary">Agenda</a>
                             <a href="{{ route('services.index') }}" class="btn btn-secondary">Servicios</a>
+                            <a href="{{ route('reports.index') }}" class="btn btn-secondary">Reportes</a>
 
                             @if ($user->isBarber())
                                 <a href="{{ route('availability.index') }}" class="btn btn-secondary">Disponibilidad</a>
@@ -89,11 +90,13 @@
                     ['label' => 'Agenda', 'route' => 'panel.index', 'active' => 'panel.*'],
                     ['label' => 'Servicios', 'route' => 'services.index', 'active' => 'services.*'],
                     ['label' => 'Barberos', 'route' => 'barbers.index', 'active' => 'barbers.*'],
+                    ['label' => 'Reportes', 'route' => 'reports.index', 'active' => 'reports.*'],
                 ],
                 $user->isBarber() => [
                     ['label' => 'Agenda', 'route' => 'panel.index', 'active' => 'panel.*'],
                     ['label' => 'Servicios', 'route' => 'services.index', 'active' => 'services.*'],
                     ['label' => 'Disponibilidad', 'route' => 'availability.index', 'active' => 'availability.*'],
+                    ['label' => 'Reportes', 'route' => 'reports.index', 'active' => 'reports.*'],
                 ],
                 default => [
                     ['label' => 'Reservar', 'route' => 'appointments.create', 'active' => 'appointments.create'],

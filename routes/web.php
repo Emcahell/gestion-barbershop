@@ -7,6 +7,7 @@ use App\Http\Controllers\AvailabilityController;
 use App\Http\Controllers\BarberController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PanelController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Route;
 
@@ -63,6 +64,9 @@ Route::middleware('auth')->group(function () {
 
         Route::patch('/panel/appointments/{appointment}/cancel', [PanelController::class, 'cancel'])
             ->name('panel.appointments.cancel');
+
+        // Reportes: ingresos, servicios completados y ranking de clientes.
+        Route::get('/reportes', [ReportController::class, 'index'])->name('reports.index');
 
         Route::resource('/services', ServiceController::class)->except('show');
     });
