@@ -134,8 +134,11 @@ middleware `role` (`app/Http/Middleware/EnsureUserHasRole`).
 
 - Turnos fijos de 60 minutos de 09:00 a 18:00 (10 por día), generados por
   `Appointment::slots()` desde `config/appointments.php`.
-- Un barbero no puede tener dos citas en la misma fecha y hora (validado en
-  `AppointmentController::store`).
+- Un barbero no puede tener dos citas en la misma fecha y hora: la validación
+  de `AppointmentController::store` da el aviso amigable y el índice único de
+  `appointments.slot_key` (solo para citas agendadas) garantiza que, si dos
+  clientes reservan en el mismo instante, la base de datos acepte solo una y
+  la otra reciba «Ese horario acaba de ocuparse…».
 - Días y horas bloqueados por el barbero se validan en el servidor
   (`StoreAppointmentRequest`), además de deshabilitarlos en la interfaz.
 - La cancelación del cliente exige más de 2 horas de anticipación; la cita
@@ -162,7 +165,7 @@ database/
 └── seeders/          DatabaseSeeder (solo admin desde env)
 resources/views/      Blade de components, home (landing), auth, appointments,
                       panel, availability, reports, services y barbers
-tests/Feature/        79 tests (auth, reserva, cancelación, agenda, servicios,
+tests/Feature/        82 tests (auth, reserva, cancelación, agenda, servicios,
                       barberos, disponibilidad, reportes, landing)
 ```
 
@@ -170,7 +173,7 @@ tests/Feature/        79 tests (auth, reserva, cancelación, agenda, servicios,
 
 ```bash
 composer dev                  # desarrollo: servidor + Vite + Pail
-php artisan test --compact     # suite (79 tests / 279 assertions, usa barbershop_test)
+php artisan test --compact     # suite (82 tests / 285 assertions, usa barbershop_test)
 vendor/bin/pint --format agent # formato de código
 npm run build                  # compilar assets para producción
 php artisan migrate            # aplicar migraciones pendientes (no borra datos)

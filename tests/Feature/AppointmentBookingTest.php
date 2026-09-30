@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\Service;
 use App\Models\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -146,6 +148,9 @@ class AppointmentBookingTest extends TestCase
 
         $this->actingAs($firstClient)->patch(route('appointments.cancel', $appointment));
 
+        // Al cancelarse, la clave del turno queda libre (NULL) para otros.
+        $this->assertNull($appointment->fresh()->slot_key);
+
         $this->actingAs($secondClient)
             ->post(route('appointments.store'), $slot)
             ->assertRedirect(route('appointments.index'));
@@ -207,5 +212,89 @@ class AppointmentBookingTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors('service_id');
+    }
+
+    public function test_database_rejects_a_second_scheduled_appointment_in_the_same_slot(): void
+    {
+        $barber = User::factory()->barber()->create();
+        $service = Service::factory()->create();
+        $date = today()->addDays(3)->toDateString();
+
+        Appointment::factory()->create([
+            'barber_id' => $barber->id,
+            'service_id' => $service->id,
+            'date' => $date,
+            'time' => '12:00',
+        ]);
+
+        // La garantía final la da el índice único de slot_key.
+        $this->expectException(UniqueConstraintViolationException::class);
+
+        Appointment::factory()->create([
+            'user_id' => User::factory()->create()->id,
+            'barber_id' => $barber->id,
+            'service_id' => $service->id,
+            'date' => $date,
+            'time' => '12:00',
+        ]);
+    }
+
+    public function test_two_different_barbers_can_be_booked_at_the_same_time(): void
+    {
+        $service = Service::factory()->create();
+        $date = today()->addDays(3)->toDateString();
+
+        foreach (['first', 'second'] as $index) {
+            Appointment::factory()->create([
+                'barber_id' => User::factory()->barber()->create()->id,
+                'service_id' => $service->id,
+                'date' => $date,
+                'time' => '12:00',
+            ]);
+        }
+
+        $this->assertDatabaseCount('appointments', 2);
+    }
+
+    public function test_when_two_clients_race_only_one_gets_the_slot(): void
+    {
+        $barber = User::factory()->barber()->create();
+        $service = Service::factory()->create();
+        $date = today()->addDays(4)->toDateString();
+
+        $slot = [
+            'service_id' => $service->id,
+            'barber_id' => $barber->id,
+            'date' => $date,
+            'time' => '13:00',
+        ];
+
+        // Simula al otro cliente que confirma exactamente entre la
+        // verificación y la inserción de esta solicitud.
+        $injected = false;
+
+        Appointment::creating(function () use (&$injected, $barber, $service, $date): void {
+            if ($injected) {
+                return;
+            }
+
+            $injected = true;
+
+            Appointment::create([
+                'user_id' => User::factory()->create()->id,
+                'barber_id' => $barber->id,
+                'service_id' => $service->id,
+                'date' => $date,
+                'time' => '13:00',
+                'status' => AppointmentStatus::Scheduled,
+            ]);
+        });
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('appointments.store'), $slot)
+            ->assertSessionHasErrors('time');
+
+        // Solo quedó la cita del otro cliente: el turno nunca se duplica.
+        $this->assertDatabaseCount('appointments', 1);
     }
 }

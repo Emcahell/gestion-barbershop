@@ -9,6 +9,7 @@ use App\Models\BarberUnavailability;
 use App\Models\Service;
 use App\Models\User;
 use App\Support\MonthCalendar;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -121,7 +122,19 @@ class AppointmentController extends Controller
                 ->withInput();
         }
 
-        $request->user()->appointments()->create($data);
+        try {
+            $request->user()->appointments()->create($data);
+        } catch (UniqueConstraintViolationException) {
+            /*
+             * Carrera entre dos solicitudes: la validación anterior vio el
+             * turno libre, pero otro cliente lo tomó antes de que llegáramos
+             * aquí. La base de datos solo dejó pasar a uno (constraint único
+             * de slot_key) y a este usuario le mostramos el mismo aviso.
+             */
+            return back()
+                ->withErrors(['time' => 'Ese horario acaba de ocuparse: otro cliente reservó al mismo tiempo. Elige un turno distinto.'])
+                ->withInput();
+        }
 
         return redirect()
             ->route('appointments.index')

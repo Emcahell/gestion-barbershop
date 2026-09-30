@@ -32,16 +32,25 @@ class Appointment extends Model
     }
 
     /**
-     * Al completarse la cita se sella el momento y el precio del servicio.
+     * Reglas que se aplican antes de cada guardado.
      *
-     * Los reportes suman el ingreso en el instante en que la cita pasa a
-     * «Completada»: cambiar después el precio de un servicio no altera el
-     * histórico y las citas canceladas nunca suman.
+     * 1. `slot_key`: clave única anti-carreras. Dos solicitudes simultáneas
+     *    para el mismo turno generan la misma clave y la base de datos
+     *    rechaza la segunda; al cancelar o completar la cita la clave pasa a
+     *    NULL y el turno queda libre para otros clientes.
+     * 2. Al completarse la cita se sella el momento y el precio del servicio
+     *    para los reportes de ingresos.
      */
     protected static function booted(): void
     {
         static::saving(function (Appointment $appointment): void {
-            if ($appointment->status !== AppointmentStatus::Completed) {
+            $status = $appointment->status ?? AppointmentStatus::Scheduled;
+
+            $appointment->slot_key = $status === AppointmentStatus::Scheduled
+                ? sprintf('%d|%s|%s', $appointment->barber_id, $appointment->date->toDateString(), $appointment->time)
+                : null;
+
+            if ($status !== AppointmentStatus::Completed) {
                 return;
             }
 
