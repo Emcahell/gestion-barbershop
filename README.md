@@ -9,15 +9,22 @@ servicios, cuentas de barberos y la barbería.
 | Componente | Tecnología |
 | --- | --- |
 | Framework | Laravel 13 (PHP 8.4) |
-| Base de datos | SQLite |
+| Base de datos | MySQL / MariaDB (`utf8mb4`) |
 | Frontend | Blade + Tailwind CSS v4 |
 | Build | Vite 8 |
-| Tests | PHPUnit (`RefreshDatabase` con BD en memoria) |
+| Tests | PHPUnit (`RefreshDatabase` con BD `barbershop_test`) |
 | Código | Laravel Pint |
 
 ## Instalación
 
-Requisitos: PHP ≥ 8.3, Composer y Node.js.
+Requisitos: PHP ≥ 8.3 con `pdo_mysql`, Composer, Node.js y un servidor
+MySQL/MariaDB en ejecución.
+
+Crea las bases de datos (la de la app y la de tests) una sola vez:
+
+```bash
+mysql -u root -e "CREATE DATABASE IF NOT EXISTS barbershop CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; CREATE DATABASE IF NOT EXISTS barbershop_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+```
 
 ```bash
 composer setup
@@ -31,7 +38,7 @@ Instalación manual equivalente:
 
 ```bash
 composer install
-cp .env.example .env
+cp .env.example .env            # revisa DB_DATABASE / DB_USERNAME / DB_PASSWORD
 php artisan key:generate
 php artisan migrate
 php artisan db:seed
@@ -51,6 +58,9 @@ Todo lo configurable vive en `.env` (nunca en el repo):
 
 | Variable | Descripción |
 | --- | --- |
+| `DB_HOST` / `DB_PORT` | Servidor MySQL (por defecto `127.0.0.1:3306`). |
+| `DB_DATABASE` | Base de datos de la app (`barbershop`; los tests usan `barbershop_test`). |
+| `DB_USERNAME` / `DB_PASSWORD` | Credenciales de MySQL. |
 | `APP_TIMEZONE` | Zona horaria (por defecto `America/Caracas`). |
 | `APP_LOCALE` | Idioma de la app (`es`). |
 | `ADMIN_NAME` | Nombre del administrador inicial. |
@@ -152,7 +162,7 @@ tests/Feature/        70 tests (auth, reserva, cancelación, agenda, servicios,
 
 ```bash
 composer dev                  # desarrollo: servidor + Vite + Pail
-php artisan test --compact     # ejecutar la suite (70 tests / 232 assertions)
+php artisan test --compact     # suite (70 tests / 232 assertions, usa barbershop_test)
 vendor/bin/pint --format agent # formato de código
 npm run build                  # compilar assets para producción
 php artisan migrate            # aplicar migraciones pendientes (no borra datos)
@@ -165,4 +175,6 @@ php artisan db:seed            # sembrar/actualizar el admin (idempotente)
   publicar y confirma que `.env` esté en `.gitignore` (las credenciales nunca
   se suben al repo).
 - Cambia la contraseña `ADMIN_PASSWORD` del administrador y usa un valor fuerte.
+- Crea la base de datos en el servidor con `utf8mb4_unicode_ci` y define `DB_*`
+  en el `.env` de producción antes de `php artisan migrate --force`.
 - Revisa que `APP_URL`, `APP_TIMEZONE` y `APP_DEBUG=false` estén correctos.

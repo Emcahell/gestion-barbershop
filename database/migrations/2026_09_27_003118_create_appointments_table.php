@@ -17,7 +17,8 @@ return new class extends Migration
             $table->foreignId('barber_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('service_id')->constrained()->cascadeOnDelete();
             $table->date('date');
-            $table->time('time');
+            // Hora en formato H:i (string, no TIME: así MySQL y SQLite devuelven igual).
+            $table->string('time', 5);
             $table->string('status')->default('scheduled')->index();
             $table->timestamps();
 
